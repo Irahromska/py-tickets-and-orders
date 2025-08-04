@@ -107,18 +107,19 @@ class Ticket(models.Model):
         errors = {}
         if self.row < 1 or self.row > max_row:
             errors["row"] = [
-                f"row number must be in available range: (1, rows): (1, {max_row})"
+                f"row number must be in available range: "
+                f"(1, rows): (1, {max_row})"
             ]
         if self.seat < 1 or self.seat > max_seat:
             errors["seat"] = [
-                f"seat number must be in available range: (1, seats_in_row): (1, {max_seat})"
+                "seat number must be in available range: "
+                f"(1, seats_in_row): (1, {max_seat})"
             ]
 
         if errors:
             raise ValidationError(errors)
 
-
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         self.full_clean()
         super().save(*args, **kwargs)
 
