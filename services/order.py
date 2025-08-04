@@ -1,16 +1,15 @@
 from typing import List
-from django.db import transaction
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import QuerySet
-
-from db.models import Order, Ticket
+from db.models import Order, Ticket, MovieSession
 
 
 @transaction.atomic
 def create_order(
-    tickets: List[dict],
-    username: str,
-    date: str = None
+        tickets: List[dict],
+        username: str,
+        date: str = None,
 ) -> Order:
     user = get_user_model().objects.get(username=username)
 
@@ -20,17 +19,24 @@ def create_order(
         order.created_at = date
         order.save()
 
-    ticket_objs = [
+    session_ids = {ticket["movie_session"] for ticket in tickets}
+    if len(session_ids) != 1:
+        raise Exception("All tickets must belong to the same movie session")
+
+    movie_session_id = session_ids.pop()
+    session = MovieSession.objects.get(id=movie_session_id)
+
+    new_tickets = [
         Ticket(
-            movie_session_id=t["movie_session"],
+            movie_session=session,
             order=order,
-            row=t["row"],
-            seat=t["seat"]
+            row=ticket["row"],
+            seat=ticket["seat"],
         )
-        for t in tickets
+        for ticket in tickets
     ]
 
-    Ticket.objects.bulk_create(ticket_objs)
+    Ticket.objects.bulk_create(new_tickets)
 
     return order
 
